@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>喵喵登录</title>
+<style>
+  :root {
+    --ink: #453740;
+    --muted: #a08e94;
+    --line: #efe6ea;
+    --field-bg: #fbf8f9;
+    --pink: #ff9ebb;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { min-height: 100%; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 190px 20px 50px;
+    display: flex;
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    overflow-x: hidden;
+    background:
+      radial-gradient(900px 620px at 12% 8%, #ffe4ee 0%, rgba(255, 228, 238, 0) 62%),
+      radial-gradient(820px 600px at 88% 14%, #e7ecff 0%, rgba(231, 236, 255, 0) 58%),
+      radial-gradient(760px 560px at 52% 104%, #e3fbf1 0%, rgba(227, 251, 241, 0) 62%),
+      #fdfbfc;
+  }
+
+  /* 柔和的漂浮光斑 */
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(50px);
+    opacity: .5;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::before {
+    width: 300px; height: 300px;
+    left: -120px; bottom: 8%;
+    background: #ffd6e6;
+  }
+  body::after {
+    width: 260px; height: 260px;
+    right: -100px; top: 18%;
+    background: #d8e2ff;
+  }
+
+  .stage {
+    position: relative;
+    z-index: 1;
+    margin: auto;
+  }
+
+  .card {
+    position: relative;
+    width: min(92vw, 400px);
+    padding: 36px 34px 30px;
+    background: #fff;
+    border-radius: 30px;
+    box-shadow:
+      0 40px 80px -42px rgba(122, 78, 96, .45),
+      0 14px 32px -20px rgba(122, 78, 96, .28),
+      inset 0 0 0 1px rgba(255, 255, 255, .9);
+  }
+
+  /* ---------- 小猫 ---------- */
+  .cat {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% - 14px);
+    width: 200px;
+    height: auto;
+    transform: translateX(-50%);
+    filter: drop-shadow(0 16px 18px rgba(150, 100, 115, .16));
+    pointer-events: none;
+    z-index: 2;
+    overflow: visible;
+  }
+
+  #catHead {
+    transform-box: view-box;
+    transform-origin: 120px 150px;
+    transition: transform .38s cubic-bezier(.34, 1.4, .64, 1);
+  }
+
+  .pupil {
+    transition: transform .28s cubic-bezier(.22, .9, .36, 1);
+  }
+
+  .eye {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: blink 6s infinite;
+  }
+
+  @keyframes blink {
+    0%, 91%, 100% { transform: scaleY(1); }
+    93%, 95%      { transform: scaleY(.12); }
+  }
+
+  .cat.happy .eye {
+    animation: none;
+    transform: scaleY(.12);
+    transition: transform .18s ease-out;
+  }
+
+  #tail {
+    transform-box: view-box;
+    transform-origin: 80px 192px;
+    animation: tailSway 3.4s ease-in-out infinite;
+  }
+
+  @keyframes tailSway {
+    0%, 100% { transform: rotate(-2deg); }
+    50%      { transform: rotate(4deg); }
+  }
+
+  /* ---------- 标题 ---------- */
+  .head { text-align: center; margin-bottom: 22px; }
+
+  .head h1 {
+    margin: 0 0 8px;
+    font-size: 27px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    background: linear-gradient(115deg, #e2678e 0%, #c07ae0 55%, #8f86f2 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .head p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: .02em;
+  }
+
+  /* ---------- 表单 ---------- */
+  .fields { display: grid; gap: 15px; }
+
+  .label {
+    display: block;
+    margin: 0 0 7px 4px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #8d7b81;
+    letter-spacing: .06em;
+  }
+
+  .field input[type="text"],
+  .field input[type="number"],
+  .field input[type="tel"] {
+    width: 100%;
+    padding: 13px 15px;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    background: var(--field-bg);
+    font: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color .2s, background .2s, box-shadow .2s;
+  }
+
+  .field input::placeholder { color: #c6b7bc; }
+
+  .field input:focus {
+    background: #fff;
+    border-color: #f9aecd;
+    box-shadow: 0 0 0 4px rgba(249, 174, 205, .18);
+  }
+
+  .field input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #fff inset;
+    -webkit-text-fill-color: var(--ink);
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  /* 性别选择 */
+  .gender { display: flex; gap: 10px; }
+
+  .chip { position: relative; flex: 1; cursor: pointer; user-select: none; }
+
+  .chip input {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: 0;
+    opacity: 0;
+  }
+
+  .chip > span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 10px;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    background: var(--field-bg);
+    font-size: 15px;
+    font-weight: 600;
+    color: #6a575e;
+    transition: all .2s ease;
+  }
+
+  .chip > span i {
+    font-style: normal;
+    font-size: 17px;
+    line-height: 1;
+    opacity: .75;
+    transition: opacity .2s;
+  }
+
+  .chip:hover > span { border-color: #f6cfda; background: #fffafb; }
+
+  .chip input:checked + span {
+    border-color: transparent;
+    color: #fff;
+    background: linear-gradient(135deg, #ffb0c6, #f98fbb);
+    box-shadow: 0 10px 20px -12px rgba(244, 130, 170, .95);
+  }
+
+  .chip input:checked + span i { opacity: 1; }
+
+  .chip input:focus-visible + span {
+    outline: 3px solid rgba(255, 170, 195, .4);
+    outline-offset: 2px;
+  }
+
+  /* 错误态 */
+  .field.invalid input[type="text"],
+  .field.invalid input[type="number"],
+  .field.invalid input[type="tel"] {
+    border-color: #f28b9b;
+    background: #fff6f7;
+    box-shadow: 0 0 0 4px rgba(242, 139, 155, .12);
+  }
+
+  .field.invalid .gender .chip > span { border-color: #f7c3ca; background: #fff8f9; }
+
+  .field.shake { animation: shake .45s ease; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    12%  { transform: translateX(-5px); }
+    28%  { transform: translateX(4px); }
+    44%  { transform: translateX(-4px); }
+    62%  { transform: translateX(3px); }
+    80%  { transform: translateX(-2px); }
+  }
+
+  /* ---------- 按钮 ---------- */
+  .submit {
+    width: 100%;
+    margin-top: 22px;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #ffb3c6, #ff9ebd 48%, #fba1d8);
+    color: #fff;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: .22em;
+    text-indent: .22em;
+    cursor: pointer;
+    box-shadow: 0 16px 28px -14px rgba(250, 140, 180, .95);
+    transition: transform .16s ease, box-shadow .2s, filter .2s;
+  }
+
+  .submit:hover { transform: translateY(-1px); filter: brightness(1.04); }
+  .submit:active { transform: translateY(1px) scale(.995); }
+
+  .tip {
+    margin: 16px 0 0;
+    text-align: center;
+    font-size: 12px;
+    color: #b8a7ad;
+    letter-spacing: .02em;
+  }
+
+  /* ---------- 提示条 ---------- */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    z-index: 10;
+    max-width: min(90vw, 420px);
+    padding: 12px 22px;
+    border-radius: 999px;
+    background: rgba(60, 46, 52, .93);
+    color: #fff;
+    font-size: 14px;
+    letter-spacing: .02em;
+    box-shadow: 0 16px 30px -14px rgba(0, 0, 0, .55);
+    opacity: 0;
+    transform: translate(-50%, 16px);
+    pointer-events: none;
+    transition: opacity .25s ease, transform .3s cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.error { background: rgba(198, 76, 98, .95); }
+
+  @media (max-width: 480px) {
+    body { padding: 150px 14px 34px; }
+
+    .cat {
+      width: 168px;
+      bottom: calc(100% - 12px);
+    }
+
+    .card {
+      padding: 32px 22px 26px;
+      border-radius: 26px;
+    }
+
+    .head h1 { font-size: 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .eye, #tail { animation: none; }
+    #catHead, .pupil { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <main class="stage">
+    <section class="card">
+      <svg id="cat" class="cat" viewBox="0 0 240 220" role="img" aria-label="坐在卡片顶部的卡通小猫">
+        <!-- 尾巴 -->
+        <g id="tail">
+          <path d="M80 192 C 44 206, 12 178, 26 144 C 34 126, 52 122, 58 136"
+                fill="none" stroke="#5b4636" stroke-width="20" stroke-linecap="round" />
+          <path d="M80 192 C 44 206, 12 178, 26 144 C 34 126, 52 122, 58 136"
+                fill="none" stroke="#f6d7b5" stroke-width="14" stroke-linecap="round" />
+        </g>
+
+        <!-- 身体 -->
+        <ellipse cx="120" cy="172" rx="54" ry="43" fill="#f6d7b5" stroke="#5b4636" stroke-width="3" />
+        <ellipse cx="120" cy="184" rx="30" ry="26" fill="#fff4e6" />
+
+        <!-- 前爪 -->
+        <g stroke="#5b4636" stroke-width="3" fill="#f9e2c8">
+          <ellipse cx="92" cy="204" rx="18" ry="11" />
+          <ellipse cx="148" cy="204" rx="18" ry="11" />
+        </g>
+        <g stroke="#d9b48c" stroke-width="2" stroke-linecap="round">
+          <path d="M87 204 v6" />
+          <path d="M96 204 v6" />
+          <path d="M143 204 v6" />
+          <path d="M152 204 v6" />
+        </g>
+
+        <!-- 脑袋 -->
+        <g id="catHead">
+          <!-- 耳朵 -->
+          <path d="M84 76 L72 28 L114 54 Z" fill="#f6d7b5" stroke="#5b4636" stroke-width="3" stroke-linejoin="round" />
+          <path d="M156 76 L168 28 L126 54 Z" fill="#f6d7b5" stroke="#5b4636" stroke-width="3" stroke-linejoin="round" />
+          <path d="M89 67 L81 40 L104 55 Z" fill="#f7b9c4" />
+          <path d="M151 67 L159 40 L136 55 Z" fill="#f7b9c4" />
+
+          <!-- 脸 -->
+          <circle cx="120" cy="102" r="50" fill="#f6d7b5" stroke="#5b4636" stroke-width="3" />
+
+          <!-- 额头花纹 -->
+          <g stroke="#dcae86" stroke-width="3" stroke-linecap="round" fill="none">
+            <path d="M110 60 q 4 7 2 13" />
+            <path d="M120 57 q 4 7 2 14" />
+            <path d="M130 60 q 4 7 2 13" />
+          </g>
+
+          <!-- 眼睛 -->
+          <g class="eye">
+            <ellipse cx="100" cy="98" rx="11" ry="13" fill="#fff" stroke="#5b4636" stroke-width="2.5" />
+            <g class="pupil">
+              <circle cx="100" cy="98" r="6" fill="#3a2d26" />
+              <circle cx="97.8" cy="95.5" r="2" fill="#fff" />
+            </g>
+          </g>
+          <g class="eye">
+            <ellipse cx="140" cy="98" rx="11" ry="13" fill="#fff" stroke="#5b4636" stroke-width="2.5" />
+            <g class="pupil">
+              <circle cx="140" cy="98" r="6" fill="#3a2d26" />
+              <circle cx="137.8" cy="95.5" r="2" fill="#fff" />
+            </g>
+          </g>
+
+          <!-- 腮红 -->
+          <ellipse cx="84" cy="116" rx="9" ry="5.5" fill="#f7a8b8" opacity=".6" />
+          <ellipse cx="156" cy="116" rx="9" ry="5.5" fill="#f7a8b8" opacity=".6" />
+
+          <!-- 鼻子 -->
+          <path d="M112 114 Q120 109 128 114 Q120 123 112 114 Z" fill="#ef8fa3" />
+
+          <!-- 嘴 -->
+          <path d="M120 121 q -3 8 -11 7 M120 121 q 3 8 11 7"
+                fill="none" stroke="#5b4636" stroke-width="2.5" stroke-linecap="round" />
+
+          <!-- 胡须 -->
+          <g stroke="#c29573" stroke-width="2.4" stroke-linecap="round" fill="none">
+            <path d="M76 100 q -16 -3 -25 -8" />
+            <path d="M75 108 q -18 0 -27 2" />
+            <path d="M77 116 q -16 5 -23 10" />
+            <path d="M164 100 q 16 -3 25 -8" />
+            <path d="M165 108 q 18 0 27 2" />
+            <path d="M163 116 q 16 5 23 10" />
+          </g>
+        </g>
+      </svg>
+
+      <header class="head">
+        <h1>欢迎回来</h1>
+        <p>小猫已经坐好啦，填完信息就出发～</p>
+      </header>
+
+      <form id="loginForm" novalidate>
+        <div class="fields">
+          <div class="field">
+            <label class="label" for="name">姓名</label>
+            <input id="name" name="name" type="text" placeholder="请输入你的姓名" autocomplete="name" />
+          </div>
+
+          <div class="field">
+            <span class="label">性别</span>
+            <div class="gender" role="radiogroup" aria-label="性别">
+              <label class="chip">
+                <input type="radio" name="gender" value="男" />
+                <span><i>♂</i>男</span>
+              </label>
+              <label class="chip">
+                <input type="radio" name="gender" value="女" />
+                <span><i>♀</i>女</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="age">年龄</label>
+            <input id="age" name="age" type="number" min="1" max="120" inputmode="numeric" placeholder="请输入年龄" />
+          </div>
+
+          <div class="field">
+            <label class="label" for="phone">手机号</label>
+            <input id="phone" name="phone" type="tel" maxlength="11" inputmode="numeric" placeholder="请输入 11 位手机号" />
+          </div>
+        </div>
+
+        <button class="submit" type="submit">登 录</button>
+      </form>
+
+      <p class="tip">点点输入框，看看小猫在做什么 👀</p>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var cat = document.getElementById("cat");
+      var head = document.getElementById("catHead");
+      var pupils = Array.prototype.slice.call(document.querySelectorAll(".pupil"));
+      var form = document.getElementById("loginForm");
+      var toast = document.getElementById("toast");
+
+      var LOOK_DOWN = 5;      // 瞳孔下移量（SVG 用户单位）
+      var pointerX = null;
+      var toastTimer = null;
+
+      function clamp(v, min, max) {
+        return Math.min(max, Math.max(min, v));
+      }
+
+      /* 记录指针点击的横向位置，让小猫朝那个方向看 */
+      document.addEventListener("pointerdown", function (e) {
+        pointerX = e.pointerType === "touch" ? null : e.clientX;
+      }, true);
+
+      document.addEventListener("pointerup", function () {
+        pointerX = null;
+      }, true);
+
+      function lookDown(field, clickX) {
+        var catBox = cat.getBoundingClientRect();
+        var fieldBox = field.getBoundingClientRect();
+
+        var catCenterX = catBox.left + catBox.width / 2;
+        var targetX = clickX == null ? fieldBox.left + fieldBox.width / 2 : clickX;
+
+        // -1（最左）~ 1（最右）
+        var nx = clamp((targetX - catCenterX) / (fieldBox.width * 0.55 + 50), -1, 1);
+
+        var pupilX = (nx * 4).toFixed(2);
+        var headTilt = (nx * 4).toFixed(2);
+
+        pupils.forEach(function (p) {
+          p.style.transform = "translate(" + pupilX + "px, " + LOOK_DOWN + "px)";
+        });
+
+        head.style.transform = "translateY(3px) rotate(" + headTilt + "deg)";
+      }
+
+      function lookIdle() {
+        pupils.forEach(function (p) {
+          p.style.transform = "translate(0px, 0px)";
+        });
+        head.style.transform = "translateY(0px) rotate(0deg)";
+      }
+
+      form.addEventListener("focusin", function (e) {
+        var field = e.target.closest(".field");
+        if (!field) return;
+
+        var x = pointerX;
+        if (x != null) {
+          var box = field.getBoundingClientRect();
+          if (x < box.left - 30 || x > box.right + 30) x = null;
+        }
+
+        lookDown(field, x);
+        pointerX = null;
+      });
+
+      form.addEventListener("focusout", function () {
+        requestAnimationFrame(function () {
+          if (!form.contains(document.activeElement)) lookIdle();
+        });
+      });
+
+      function showToast(message, isError) {
+        toast.textContent = message;
+        toast.classList.toggle("error", !!isError);
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
+          toast.classList.remove("show");
+        }, 2400);
+      }
+
+      function shakeField(field) {
+        field.classList.add("invalid", "shake");
+        setTimeout(function () {
+          field.classList.remove("shake");
+        }, 500);
+
+        function clearInvalid() {
+          field.classList.remove("invalid");
+        }
+        field.addEventListener("input", clearInvalid, { once: true });
+        field.addEventListener("change", clearInvalid, { once: true });
+        field.addEventListener("pointerdown", clearInvalid, { once: true });
+      }
+
+      function failInput(el, message) {
+        var field = el.closest(".field");
+        if (field) shakeField(field);
+        el.focus({ preventScroll: true });
+        showToast(message, true);
+      }
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        var nameEl = document.getElementById("name");
+        var ageEl = document.getElementById("age");
+        var phoneEl = document.getElementById("phone");
+        var genderEl = form.querySelector('input[name="gender"]:checked');
+
+        var name = nameEl.value.trim();
+        var age = Number(ageEl.value);
+        var phone = phoneEl.value.trim();
+
+        if (!name) {
+          failInput(nameEl, "小猫还不知道你的名字呢～");
+          return;
+        }
+
+        if (!genderEl) {
+          var genderField = form.querySelector(".gender").closest(".field");
+          shakeField(genderField);
+          showToast("请选择一个性别呀～", true);
+          return;
+        }
+
+        if (!ageEl.value || !isFinite(age) || age < 1 || age > 120) {
+          failInput(ageEl, "年龄要在 1 到 120 岁之间哦～");
+          return;
+        }
+
+        if (!/^1[3-9]\d{9}$/.test(phone)) {
+          failInput(phoneEl, "手机号好像不太对呢～");
+          return;
+        }
+
+        showToast("喵～ " + name + "，登录成功！");
+        cat.classList.add("happy");
+        setTimeout(function () {
+          cat.classList.remove("happy");
+        }, 1500);
+
+        form.reset();
+        if (document.activeElement && document.activeElement.blur) {
+          document.activeElement.blur();
+        }
+        lookIdle();
+      });
+    })();
+  </script>
+</body>
+</html>
